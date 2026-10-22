@@ -5,37 +5,31 @@ import numpy as np
 import warnings
 warnings.filterwarnings('ignore')
 
-# ── Titanic Dataset (built-in, no download needed) ────────────────────────
-url = "https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv"
+# ── Titanic Dataset (891 passengers) ─────────────────────────────────────
+# Loads titanic.csv from this folder if present, otherwise downloads it.
+import os
 
-try:
-    df = pd.read_csv(url)
-    print("Dataset loaded from URL")
-except:
-    # Fallback: hardcoded sample if no internet
-    print("Using built-in data")
-    np.random.seed(42)
-    n = 891
-    df = pd.DataFrame({
-        'PassengerId': range(1, n+1),
-        'Survived': np.random.choice([0,1], n, p=[0.62, 0.38]),
-        'Pclass': np.random.choice([1,2,3], n, p=[0.24, 0.21, 0.55]),
-        'Name': ['Passenger_'+str(i) for i in range(n)],
-        'Sex': np.random.choice(['male','female'], n, p=[0.65, 0.35]),
-        'Age': np.where(np.random.rand(n) > 0.2, np.random.normal(30, 14, n).clip(1, 80), np.nan),
-        'SibSp': np.random.choice([0,1,2,3,4], n, p=[0.68,0.23,0.06,0.02,0.01]),
-        'Parch': np.random.choice([0,1,2,3], n, p=[0.76,0.13,0.09,0.02]),
-        'Fare': np.random.exponential(32, n).clip(5, 500),
-        'Embarked': np.random.choice(['S','C','Q'], n, p=[0.72,0.19,0.09])
-    })
+LOCAL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "titanic.csv")
+URL = "https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv"
+
+if os.path.exists(LOCAL_PATH):
+    df = pd.read_csv(LOCAL_PATH)
+    print("Dataset loaded from local titanic.csv")
+else:
+    try:
+        df = pd.read_csv(URL)
+        print("Dataset loaded from URL")
+    except Exception as e:
+        raise SystemExit(f"Could not load the Titanic dataset ({e}). "
+                         f"Download it from {URL} and save it as titanic.csv next to this script.")
 
 # ── Data Cleaning ─────────────────────────────────────────────────────────
 print(f"\nShape before cleaning: {df.shape}")
 print(f"Missing values:\n{df.isnull().sum()[df.isnull().sum() > 0]}")
 
-df['Age'].fillna(df['Age'].median(), inplace=True)
-df['Embarked'].fillna(df['Embarked'].mode()[0], inplace=True)
-df.drop(columns=['Cabin'], errors='ignore', inplace=True)
+df['Age'] = df['Age'].fillna(df['Age'].median())
+df['Embarked'] = df['Embarked'].fillna(df['Embarked'].mode()[0])
+df = df.drop(columns=['Cabin'], errors='ignore')
 
 print(f"\nShape after cleaning: {df.shape}")
 print(f"Survival rate: {df['Survived'].mean()*100:.1f}%")
